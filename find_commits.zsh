@@ -45,14 +45,13 @@ for d in "${git_dirs[@]}"; do
 done
 
 # If no SHAs provided, just list repos and exit 0.
-# if [[ -z "$4" ]]; then
-#   printf "%s\n" "${repos[@]}"
-#   exit 0
-# fi
+if [[ -z "$4" ]]; then
+  printf "%s\n" "${repos[@]}"
+  exit 0
+fi
 
 # 4) make a hash array of commits (should be comma separated)
-#hashes=(${4//,/ })
-hashes="848cf4aa23c9ed6c8bb1aa4ecbec800aa94e638b"
+hashes=(${4//,/ })
 
 # 5) Search each provided SHA across all repos
 echo "searching for commits: ${hashes[@]}"
