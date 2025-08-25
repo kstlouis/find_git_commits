@@ -30,19 +30,23 @@ fi
 
 # 3) Locate git repositories (prints parent path of .git)
 echo "Searching for git repositories in $userHome..."
-# -prune keeps traversal fast and avoids descending into .git internals repeatedly
-git_dirs=($(find "$userHome" -type d -name ".git" -prune 2>/dev/null))
 
-if (( ${#git_dirs[@]} == 0 )); then
-  echo "no git repos found"
-  exit 0
-fi
-
-# Convert .git paths to repo roots
 repos=()
-for d in "${git_dirs[@]}"; do
-  repos+=("${d%/.git}")
-done
+
+# Use find with -print0 for safety with spaces
+while IFS= read -r -d '' repo; do
+  # Strip trailing "/.git"
+  parent="${repo%/.git}"
+  repos+=("$parent")
+done < <(
+  find "$userHome" \
+    -type d -name ".git" \
+    -not -path "*/Library/*" \
+    -not -path "*/.Trash/*" \
+    -not -path "*/.cache/*" \
+    -prune \
+    -print0 2>/dev/null
+)
 
 # If no SHAs provided, just list repos and exit 0.
 if [[ -z "$4" ]]; then
@@ -51,31 +55,24 @@ if [[ -z "$4" ]]; then
 fi
 
 # 4) make a hash array of commits (should be comma separated)
-hashes=(${4//,/ })
+hashes=("${(@s/,/)4}")
+# for testing:
+# hashes=(
+#   848cf4aa23c9ed6c8bb1aa4ecbec800aa94e638b
+#   26bf9fa35dcc36fa1e8eb5f9624eaba46ad6d38a)
 
 # 5) Search each provided SHA across all repos
-echo "searching for commits: ${hashes[@]}"
 matches_found=0
 
-for sha in "${hashes[@]}"; do
-  for repo in "${repos[@]}"; do
-    # Quietly verify the SHA resolves to a commit in this repo (short SHAs OK if unique)
-    if git -C "$repo" rev-parse --quiet --verify "${sha}^{commit}" >/dev/null 2>&1; then
-      full_sha=$(git -C "$repo" rev-parse "${sha}^{commit}" 2>/dev/null)
-      # Gather a few useful fields about the commit
-      subject=$(git -C "$repo" log -1 --format='%s' "$full_sha" 2>/dev/null)
-      author=$(git -C "$repo" log -1 --format='%an <%ae>' "$full_sha" 2>/dev/null)
-      date=$(git -C "$repo" log -1 --format='%ci' "$full_sha" 2>/dev/null)
-      remote=$(git -C "$repo" remote get-url origin 2>/dev/null || true)
-
-      echo "  FOUND: sha=$full_sha"
-      echo "  repo=$repo"
-      [[ -n "$remote" ]] && echo "  remote=$remote"
-      echo "  date=$date"
-      echo "  author=$author"
-      echo "  subject=$subject"
-      echo ""
-      matches_found=1
+  for sha in "${hashes[@]}"; do
+    echo "Looking for $sha..."
+    for repo in "${repos[@]}"; do
+    if sudo -u "$currentUser" git -C "$repo" rev-parse --quiet --verify "${sha}^{commit}" >/dev/null 2>&1; then
+        full_sha=$(sudo -u "$currentUser" git -C "$repo" rev-parse "${sha}^{commit}")
+        echo "  FOUND! sha=$full_sha"
+        echo "  repo=$repo"
+        echo ""
+        matches_found=1
     fi
   done
 done
