@@ -63,6 +63,7 @@ hashes=("${(@s/,/)4}")
 
 # 5) Search each provided SHA across all repos
 matches_found=0
+matched_repos=()
 
   for sha in "${hashes[@]}"; do
     echo "Looking for $sha..."
@@ -73,6 +74,10 @@ matches_found=0
         echo "  repo=$repo"
         echo ""
         matches_found=1
+        # Add repo to matched_repos array if not already present
+        if [[ ! " ${matched_repos[*]} " =~ " $repo " ]]; then
+            matched_repos+=("$repo")
+        fi
     fi
   done
 done
