@@ -10,23 +10,20 @@
 # 1) Check if git is installed
 # macOS by default comes with a stubbed git command that triggers CLT install; checking "command -v git" isnt' sufficient. 
 
-# Check for a Homebrew git first:
-for p in /opt/homebrew/bin/git /usr/local/bin/git /opt/local/bin/git; do
-  if [[ -x "$p" ]]; then
-    echo "Homebrew git installed: $p"
-  fi
-done
-
-# Check if Xcode/CLT is configured (silent, no prompt)
-if /usr/bin/xcode-select -p >/dev/null 2>&1; then
-  # Safe to use xcrun now; this won't prompt since tools are present
-  if /usr/bin/xcrun --find git >/dev/null 2>&1; then
-    echo "Xcode CLT git installed:"
-  fi
+# check brew first:
+if [[ -x /opt/homebrew/bin/git || -x /usr/local/bin/git || -x /opt/local/bin/git ]]; then
+  for p in /opt/homebrew/bin/git /usr/local/bin/git /opt/local/bin/git; do
+    if [[ -x "$p" ]]; then
+      echo "git installed at: $p"
+      break
+    fi
+  done
+elif /usr/bin/xcode-select -p >/dev/null 2>&1 && /usr/bin/xcrun --find git >/dev/null 2>&1; then
+  echo "git installed at: $(/usr/bin/xcrun --find git)"
+else
+  echo "Git not installed"
+  exit 0
 fi
-
-echo "No git install found."
-exit 0
 
 # 2) Get current logged-in user (so we're not running git commands as root) and home dir path
 currentUser=$(scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ && ! /loginwindow/ { print $3 }')
