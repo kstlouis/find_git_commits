@@ -8,7 +8,9 @@
 # =========================================
 
 # 1) Check if git is installed
-if ! command -v git >/dev/null 2>&1; then
+# MacOS by default comes with a stubbed git command that runs an XCode tools script, so this line checks the size of the binary to see if it's real
+# Checking on my machines shows that the stubbed version is about 24 blocks; the real one, 3508. Choosing 1000 here to account for variations
+if ! (( $(ls -sH `which git` 2>/dev/null | awk '{print $1}' 2>/dev/null || echo 0) > 1000 )); then
   echo "git not installed"
   exit 0
 fi
