@@ -8,12 +8,25 @@
 # =========================================
 
 # 1) Check if git is installed
-# MacOS by default comes with a stubbed git command that runs an XCode tools script, so this line checks the size of the binary to see if it's real
-# Checking on my machines shows that the stubbed version is about 24 blocks; the real one, 3508. Choosing 1000 here to account for variations
-if ! (( $(ls -sH `which git` 2>/dev/null | awk '{print $1}' 2>/dev/null || echo 0) > 1000 )); then
-  echo "git not installed"
-  exit 0
+# macOS by default comes with a stubbed git command that triggers CLT install; checking "command -v git" isnt' sufficient. 
+
+# Check for a Homebrew git first:
+for p in /opt/homebrew/bin/git /usr/local/bin/git /opt/local/bin/git; do
+  if [[ -x "$p" ]]; then
+    echo "Homebrew git installed: $p"
+  fi
+done
+
+# Check if Xcode/CLT is configured (silent, no prompt)
+if /usr/bin/xcode-select -p >/dev/null 2>&1; then
+  # Safe to use xcrun now; this won't prompt since tools are present
+  if /usr/bin/xcrun --find git >/dev/null 2>&1; then
+    echo "Xcode CLT git installed:"
+  fi
 fi
+
+echo "No git install found."
+exit 0
 
 # 2) Console user & home (per your snippet)
 currentUser=$(scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ && ! /loginwindow/ { print $3 }')
@@ -58,7 +71,7 @@ fi
 
 # 4) make a hash array of commits (should be comma separated)
 hashes=("${(@s/,/)4}")
-# for testing:
+#for testing:
 # hashes=(
 #   848cf4aa23c9ed6c8bb1aa4ecbec800aa94e638b
 #   26bf9fa35dcc36fa1e8eb5f9624eaba46ad6d38a)
