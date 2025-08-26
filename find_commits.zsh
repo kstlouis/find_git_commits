@@ -49,13 +49,13 @@ done < <(
 )
 
 # If no SHAs provided, just list repos and exit 0.
-if [[ -z "$4" ]]; then
+if [[ -z "$1" ]]; then
   printf "%s\n" "${repos[@]}"
   exit 0
 fi
 
 # 4) make a hash array of commits (should be comma separated)
-hashes=("${(@s/,/)4}")
+hashes=("${(@s/,/)1}")
 # for testing:
 # hashes=(
 #   848cf4aa23c9ed6c8bb1aa4ecbec800aa94e638b
