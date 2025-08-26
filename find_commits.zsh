@@ -87,4 +87,20 @@ if (( matches_found == 0 )); then
   exit 0
 fi
 
+# 6) Search each repo in matched_repos for refs that contain each found commit
+for repo in "${matched_repos[@]}"; do
+  echo "Searching for refs in $repo..."
+  refs=$(sudo -u "$currentUser" git -C "$repo" for-each-ref --contains "$full_sha" --format='%(refname:short)' 2>/dev/null)
+  if [[ -n "$refs" ]]; then
+    echo "  refs containing this commit:"
+    while IFS= read -r ref; do
+      echo "    $ref"
+    done <<< "$refs"
+    exit 0
+  else
+    echo "  no refs found containing this commit"
+    exit 1
+  fi
+done
+
 exit 1
