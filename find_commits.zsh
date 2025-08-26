@@ -88,19 +88,67 @@ if (( matches_found == 0 )); then
 fi
 
 # 6) Search each repo in matched_repos for refs that contain each found commit
+refs_to_delete=()
+found_refs=0
+
 for repo in "${matched_repos[@]}"; do
   echo "Searching for refs in $repo..."
-  refs=$(sudo -u "$currentUser" git -C "$repo" for-each-ref --contains "$full_sha" --format='%(refname:short)' 2>/dev/null)
+  refs=$(sudo -u "$currentUser" git -C "$repo" for-each-ref --contains "$full_sha" --format='%(refname)' 2>/dev/null)
   if [[ -n "$refs" ]]; then
     echo "  refs containing this commit:"
     while IFS= read -r ref; do
       echo "    $ref"
+      refs_to_delete+=("$repo:$ref")
+      found_refs=1
     done <<< "$refs"
-    exit 0
   else
     echo "  no refs found containing this commit"
-    exit 1
   fi
 done
 
-exit 1
+if (( found_refs == 0 )); then
+  echo "no refs found containing the commits"
+  exit 1
+fi
+
+# 7) Delete the located refs via git update-ref -d name/of/ref
+echo "Deleting found refs..."
+for ref_entry in "${refs_to_delete[@]}"; do
+  # Split repo:ref
+  repo="${ref_entry%%:*}"
+  ref="${ref_entry#*:}"
+
+  echo "  Deleting $ref in $repo"
+  if sudo -u "$currentUser" git -C "$repo" update-ref -d "$ref" 2>/dev/null; then
+    echo "    ✓ Successfully deleted $ref"
+  else
+    echo "    ✗ Failed to delete $ref"
+  fi
+done
+
+# 8) Run garbage collection on repositories where refs were deleted
+echo "Running garbage collection on affected repositories..."
+
+# Get unique repositories from refs_to_delete
+gc_repos=()
+for ref_entry in "${refs_to_delete[@]}"; do
+  repo="${ref_entry%%:*}"
+  # Add repo to gc_repos array if not already present
+  if [[ ! " ${gc_repos[*]} " =~ " $repo " ]]; then
+    gc_repos+=("$repo")
+  fi
+done
+
+# Run git gc on each repository
+for repo in "${gc_repos[@]}"; do
+  echo "  Running garbage collection in $repo"
+  if sudo -u "$currentUser" git -C "$repo" gc --prune=now --quiet 2>/dev/null; then
+    echo "    ✓ Garbage collection completed"
+  else
+    echo "    ✗ Garbage collection failed or had warnings"
+  fi
+done
+
+echo "Ref deletion and cleanup process completed."
+
+exit 0
