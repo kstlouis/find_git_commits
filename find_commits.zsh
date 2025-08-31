@@ -1,13 +1,17 @@
 #!/bin/zsh
 
 # =========================================
-# git repo + commit finder (macOS / zsh)
+# script for finding .git commits by specific hashes. 
 # Usage:
-#   ./find_commits.zsh                 # list repos only
-#   ./find_commits.zsh <sha> [<sha>...] # search SHAs across repos
+#   ./find_commits.zsh                  # only return list of repos
+#   ./find_commits.zsh <sha1,sha2,sha3> # search for commits in any repos, returns full path to commit hash
+#  
+# Note: meant to be deployed through Jamf with arguments provided as parameters.
+# For local testing, some modification is required.
 # =========================================
 
 # 1) Check if git is installed
+# if git isn't installed, script exits. Assumption is no git --> no git repositories.
 # macOS by default comes with a stubbed git command that triggers CLT install; checking "command -v git" isnt' sufficient. 
 
 # check brew first:
@@ -18,6 +22,7 @@ if [[ -x /opt/homebrew/bin/git || -x /usr/local/bin/git || -x /opt/local/bin/git
       break
     fi
   done
+  # check for xcode CLT install (with some tricks to make it silent)
 elif /usr/bin/xcode-select -p >/dev/null 2>&1 && /usr/bin/xcrun --find git >/dev/null 2>&1; then
   echo "git installed at: $(/usr/bin/xcrun --find git)"
 else
@@ -31,13 +36,13 @@ echo "Current logged-in user: $currentUser"
 
 if [[ -z "${currentUser:-}" ]]; then
   echo "No console user detected; exiting 0"
-  exit 0
+  exit 2
 fi
 
 userHome="/Users/$currentUser"
 if [[ ! -d "$userHome" ]]; then
   echo "Home directory not found for '$currentUser' ($userHome); exiting 0"
-  exit 0
+  exit 2
 fi
 
 # 3) Locate git repositories (prints parent path of .git)
@@ -60,18 +65,13 @@ done < <(
     -print0 2>/dev/null
 )
 
-
-# If no SHAs provided, just list repos and exit 0.
-# # # FOR LOCAL TESTING: comment out this section
-if [[ -z "$4" ]]; then
-  printf "%s\n" "${repos[@]}"
-  exit 0
-fi
-
 # 4) make a hash array of commits (should be comma separated)
-# # # FOR LOCAL TESTING: comment out this line:
+# ==================================================================================
+#FOR LOCAL TESTING: 
+# comment out this line 
+# then uncomment the array. Insert your own hashes.
+# ==================================================================================
 hashes=("${(@s/,/)4}")
-# # # FOR LOCAL TESTING: uncomment this array, insert your own hashes
 # hashes=(
 #   848cf4aa23c9ed6c8bb1aa4ecbec800aa94e638b
 #   26bf9fa35dcc36fa1e8eb5f9624eaba46ad6d38a)
