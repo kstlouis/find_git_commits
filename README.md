@@ -36,12 +36,37 @@ When _only_ affected devices are left in `failed` reporting:
 - It will hammer disk I/O and cpu usage while it runs; up to a minutes. Narrow the search scope or run it off-hours.
 - This was definitely vibe-coded. Use at your own risk. PRs welcome. 
 
+# Local Testing
+
+If you want to test locally, `$4` and `$5` need to be modified in the script to accept local arguments, or just comment out the appropriate sections. 
+
+you can make a test repo to check commit removal with the following: 
+
+```
+# 1) New test repo
+mkdir /tmp/git-dangle-test && cd /tmp/git-dangle-test
+git init
+git commit --allow-empty -m "root"
+
+# 2) Create commits on a throwaway branch
+git checkout -b throwaway
+echo a > f && git add f && git commit -m "add f"
+echo b >> f && git commit -am "change f"
+
+# 3) Delete the branch (these commits become unreachable/dangling)
+git checkout - # back to main/master
+git branch -D throwaway
+
+# 4) Confirm dangling commits exist
+git fsck --dangling    # should print lines like: "dangling commit <sha>"
+```
+
 # Future Improvements
 
 - ~~remove component that just lists found repositories. useful for testing but extraneous.~~
-- clean up order of operations, put args/parameters near top
+- ~~clean up order of operations, put args/parameters near top~~
+- ~~add mode switcher; with arguments given to `$5`, list-only mode vs "search and destroy" cleanup mode~~
+  - ~~list-only still exits with code 1 when hashes are detected~~
+  - ~~cleanup mode will exit 0 on success~~
 - add ability to limit search to only specific directories
-  - entire User dir is needlessly invasive and costly
-- add mode switcher; with arguments given to `$5`, list-only mode vs "search and destroy" cleanup mode
-  - list-only still exits with code 1 when hashes are detected
-  - cleanup mode will exit 0 on success
+  - entire User dir is needlessly invasive and costs a lot of cpu & I/O

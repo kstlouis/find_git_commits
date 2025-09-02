@@ -15,21 +15,24 @@
 # $4: commit hashes. Comma-Separated <sha1,sha2,sha3?
 # ==================================================================================
 #FOR LOCAL TESTING: 
-# comment out this line 
-# then uncomment the array. Insert your own hashes.
+# comment out this line then uncomment the array. Insert your own hashes.
 # ==================================================================================
 hashes=("${(@s/,/)4}")
 # hashes=(
-#   848cf4aa23c9ed6c8bb1aa4ecbec800aa94e638b
-#   26bf9fa35dcc36fa1e8eb5f9624eaba46ad6d38a)
+#   sha1
+#   sha2)
 #
 # $5: usage mode. "report-only" or "remove" (default is report-only)
+remove=false
+# ==================================================================================
+#FOR LOCAL TESTING: 
+# comment out the if/else block and just edit "remove" manually
+# ==================================================================================
 if [[ "$5" == "remove" ]]; then
+  remove=true
   echo "Running in REMOVE mode..."
-  # removal logic here
 else
   echo "Running in REPORT-ONLY mode..."
-  # reporting logic here
 fi
 
 # Exit if array is empty (no commit hashes entered)
@@ -117,7 +120,7 @@ if [[ ${#matches_found[@]} -eq 0 ]]; then
   echo "no matching commits found"
   exit 0
 else
-  if [[ "$5" == "remove" ]]; then
+  if $remove; then
     echo "Matches found. REMOVE mode: cleaning unreachable objects in matched repos..."
     for repo in "${matches_found[@]}"; do
       echo "  Cleaning: $repo"
