@@ -10,7 +10,35 @@
 # For local testing, some modification is required.
 # =========================================
 
-# 1) Check if git is installed
+# Input parameters:
+
+# $4: commit hashes. Comma-Separated <sha1,sha2,sha3?
+# ==================================================================================
+#FOR LOCAL TESTING: 
+# comment out this line 
+# then uncomment the array. Insert your own hashes.
+# ==================================================================================
+hashes=("${(@s/,/)4}")
+# hashes=(
+#   848cf4aa23c9ed6c8bb1aa4ecbec800aa94e638b
+#   26bf9fa35dcc36fa1e8eb5f9624eaba46ad6d38a)
+#
+# $5: usage mode. "report-only" or "remove" (default is report-only)
+if [[ "$5" == "remove" ]]; then
+  echo "Running in REMOVE mode..."
+  # removal logic here
+else
+  echo "Running in REPORT-ONLY mode..."
+  # reporting logic here
+fi
+
+# Exit if array is empty (no commit hashes entered)
+if [[ ${#hashes[@]} -eq 0 ]]; then
+  echo "Error: no commit hashes provided."
+  exit 2
+fi
+
+# Check if git is installed
 # if git isn't installed, script exits. Assumption is no git --> no git repositories.
 # macOS by default comes with a stubbed git command that triggers CLT install; checking "command -v git" isnt' sufficient. 
 
@@ -30,7 +58,7 @@ else
   exit 0
 fi
 
-# 2) Get current logged-in user (so we're not running git commands as root) and home dir path
+# Get current logged-in user (so we're not running git commands as root) and home dir path
 currentUser=$(scutil <<< "show State:/Users/ConsoleUser" | awk '/Name :/ && ! /loginwindow/ { print $3 }')
 echo "Current logged-in user: $currentUser"
 
@@ -45,7 +73,7 @@ if [[ ! -d "$userHome" ]]; then
   exit 2
 fi
 
-# 3) Locate git repositories (prints parent path of .git)
+# Locate git repositories (prints parent path of .git)
 echo "Searching for git repositories in $userHome..."
 
 repos=()
@@ -65,19 +93,11 @@ done < <(
     -print0 2>/dev/null
 )
 
-# 4) make a hash array of commits (should be comma separated)
-# ==================================================================================
-#FOR LOCAL TESTING: 
-# comment out this line 
-# then uncomment the array. Insert your own hashes.
-# ==================================================================================
-hashes=("${(@s/,/)4}")
-# hashes=(
-#   848cf4aa23c9ed6c8bb1aa4ecbec800aa94e638b
-#   26bf9fa35dcc36fa1e8eb5f9624eaba46ad6d38a)
+# Search each provided SHA across all repos
 
-# 5) Search each provided SHA across all repos
-matches_found=0
+# Ensure zsh unique-array behavior
+typeset -aU matches_found     # unique elements only
+matches_found=()              # start empty
 
 for sha in "${hashes[@]}"; do
   echo "Looking for $sha..."
@@ -87,14 +107,30 @@ for sha in "${hashes[@]}"; do
       echo "  FOUND! sha=$full_sha"
       echo "  repo=$repo"
       echo ""
-      matches_found=1
+      matches_found+=("$repo")   # add repo; dedup handled by -aU
     fi
   done
 done
 
-if (( matches_found == 0 )); then
+# If no matches, array will still be empty
+if [[ ${#matches_found[@]} -eq 0 ]]; then
   echo "no matching commits found"
   exit 0
+else
+  if [[ "$5" == "remove" ]]; then
+    echo "Matches found. REMOVE mode: cleaning unreachable objects in matched repos..."
+    for repo in "${matches_found[@]}"; do
+      echo "  Cleaning: $repo"
+      # cd into each repo as the target user, then run the maintenance commands
+      if ! sudo -u "$currentUser" bash -c 'cd "$1" && git reflog expire --expire-unreachable=now --all && git gc --prune=now' _ "$repo"; then
+        echo "  ERROR: Cleanup failed in $repo"
+        exit 1
+      fi
+    done
+    exit 0
+  else
+    echo "Matches found. REPORT-ONLY mode: no changes made."
+  fi
 fi
 
 exit 1
