@@ -8,10 +8,11 @@ Soomewhat confusingly, it will exit with an error code `1` if it _does_ find the
 - Exits with code `0` if no git repositories are found 
 - Returns list of commits and their metadata, then exits with code `1` if any are found (or if any other error occurs)
 
+Can also be used to remove the offending commits if used with the `remove` flag.
+
 # Usage
 
-This script deploys with 2 arguments/parameters: 
-
+Jamf Parameters:
 `$4`: commit `SHA` values we're looking for. Provide them all at once, comma-separated (`sha1,sha2,sha3`)
 `$5`: deployment mode. `report-only` or `remove`. If no argument is provided, report-only is the default.
 
@@ -28,7 +29,6 @@ When _only_ affected devices are left in `failed` reporting:
 - adjust `$5` so removal mode is triggered
 - flush all failed runs from the Policy logs so the Policy re-deploys
 - if cleanup is successful, no `failed` devices should remain in the policy logs!
-
 
 #  Caveats
 
