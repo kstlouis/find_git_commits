@@ -44,7 +44,7 @@ you can make a test repo to check commit removal with the following:
 
 ```
 # 1) New test repo
-mkdir /tmp/git-dangle-test && cd /tmp/git-dangle-test
+mkdir ~/Desktop/git-dangle-test && cd ~/Desktop/git-dangle-test
 git init
 git commit --allow-empty -m "root"
 
@@ -58,7 +58,7 @@ git checkout - # back to main/master
 git branch -D throwaway
 
 # 4) Confirm dangling commits exist
-git fsck --dangling    # should print lines like: "dangling commit <sha>"
+git fsck --dangling --no-reflogs   # should print lines like: "dangling commit <sha>"
 ```
 
 # Future Improvements
