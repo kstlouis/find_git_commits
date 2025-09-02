@@ -18,12 +18,12 @@ Jamf Parameters:
 
 For the safest/cleanest experience, use both modes in series.
 
-### 1. `Report-only` mode
+### 1. `report-only` mode
 
 - deploy via MDM to desired endpoints using a Policy
 - review all `failed` results; address any unknown errors, then flush the fail log for that unit so the policy re-deploys.
 
-### 2. `Remove` mode \[still WIP\]
+### 2. `remove` mode
 
 When _only_ affected devices are left in `failed` reporting:
 - adjust `$5` so removal mode is triggered
