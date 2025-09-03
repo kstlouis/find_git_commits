@@ -125,7 +125,7 @@ else
     for repo in "${matches_found[@]}"; do
       echo "  Cleaning: $repo"
       # cd into each repo as the target user, then run the maintenance commands
-      if ! sudo -u "$currentUser" bash -c 'cd "$1" && git reflog expire --expire-unreachable=now --all && git gc --prune=now' _ "$repo"; then
+      if ! sudo -u "$currentUser" env HOME="/Users/$currentUser" bash -c 'cd "$1" && git reflog expire --expire-unreachable=now --all && git gc --prune=now' _ "$repo"; then
         echo "  ERROR: Cleanup failed in $repo"
         exit 1
       fi
