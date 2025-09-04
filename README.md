@@ -60,6 +60,11 @@ git branch -D throwaway
 # 4) Confirm dangling commits exist
 git fsck --dangling --no-reflogs   # should print lines like: "dangling commit <sha>"
 ```
+# --dry-run
+
+`git reflog` has a dry-run flag you can set. You'll want to pipe the output:
+
+`git reflog expire --all --expire-unreachable=now --dry-run | grep -v "keep"`
 
 # Future Improvements
 
